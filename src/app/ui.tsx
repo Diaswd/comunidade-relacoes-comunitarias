@@ -1,0 +1,7 @@
+"use client";
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
+import {Empty} from '@/components/ui/empty';import {SearchX} from 'lucide-react';
+export function Pick({label,value,options,onChange,disabled=false}:{label:string;value:string;options:(string|{value:string;label:string})[];onChange:(s:string)=>void;disabled?:boolean}){return <div className="field"><label>{label}</label><Select value={value||undefined} onValueChange={onChange} disabled={disabled}><SelectTrigger aria-label={label} className="control"><SelectValue placeholder="Selecione"/></SelectTrigger><SelectContent>{options.map(o=>{const v=typeof o==='string'?o:o.value;return <SelectItem key={v} value={v}>{typeof o==='string'?o:o.label}</SelectItem>})}</SelectContent></Select></div>}
+export function Badge({children}:{children:React.ReactNode}){const s=String(children),style=s==='Concluída'||s==='Respondido'||s==='Realizado'?'green':s==='Aguardando retorno'?'amber':s==='Urgente'||s==='Alta'||s==='Cancelado'?'red':'';return <span className={'badge '+style}>{children}</span>}
+export function NoData({title='Nenhum registro por aqui',text='Ajuste os filtros ou cadastre um novo registro.'}:{title?:string;text?:string}){return <Empty className="empty-state"><SearchX size={30}/><h3>{title}</h3><p>{text}</p></Empty>}
+export function Field({label,children,wide=false}:{label:string;children:React.ReactNode;wide?:boolean}){return <label className={'field '+(wide?'wide':'')}><span>{label}</span>{children}</label>}
