@@ -9,8 +9,19 @@
 - Três cadastros de integrantes: administrador aprovado pelo proprietário e dois perfis fictícios sem login.
 - O banco e a publicação anteriores foram preservados. A importação é um snapshot; edições posteriores na versão anterior não são sincronizadas.
 - Site publicado em https://diaswd.github.io/comunidade-relacoes-comunitarias/ e código público por autorização do proprietário.
-- Conta inicial criada e ativada pelo proprietário no Supabase Auth. O vínculo com o perfil de Coordenação ocorre no primeiro login. Nenhuma senha foi criada pelo agente.
-- Cadastro público e login anônimo desativados. Contas internas criadas administrativamente, sem envio de e-mail. Teste de entrada com o administrador ainda pendente.
+- Conta inicial criada e ativada pelo proprietário no Supabase Auth; primeiro login realizado e perfil de Coordenação carregado no site publicado. Nenhuma senha foi criada pelo agente.
+- Cadastro público e login anônimo desativados. Contas internas criadas administrativamente, sem envio de e-mail.
+
+## Verificação da versão de acesso interno
+
+- Código funcional publicado: commit `57b2ba5`. Verificação automática e publicação no GitHub Actions concluídas com sucesso.
+- 22 testes passaram: permissões e auditoria no PostgreSQL, conflitos de edição, validação de campos e conteúdo/estrutura do Excel.
+- Verificação remota somente leitura confirmou cadastro público e login anônimo desativados, cinco tabelas protegidas e RPC de carregamento inacessível a visitantes.
+- Security Advisor do Supabase sem alertas na verificação de 14/10/2026.
+- Login da Coordenação e manutenção da sessão após recarregar a página verificados no site publicado. Carregadas 12 demandas, 3 compromissos e 3 encaminhamentos.
+- Filtro de Feitoria retornou 2 demandas. A exportação foi registrada no Supabase e o download do Excel foi confirmado pelo proprietário.
+- Formulário de alteração de senha conferido sem enviar alterações de credenciais.
+- A simulação de viewport móvel não foi aplicada pelo Chrome controlado nesta sessão. A conferência visual desta atualização em celular continua pendente. Também continuam pendentes os testes manuais com contas de Equipe/Consulta e o fluxo completo de edição no ambiente final; os controles correspondentes passaram nos testes de banco.
 
 ## Migrações
 
