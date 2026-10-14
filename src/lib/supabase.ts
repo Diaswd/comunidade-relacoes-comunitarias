@@ -7,4 +7,3 @@ export const supabase = configured ? createClient(url, key, {
   auth: {flowType:'pkce', persistSession:true, autoRefreshToken:true, detectSessionInUrl:true},
 }) : null;
 export function getClient(){if(!supabase)throw Error('Configure a URL e a chave pública do Supabase.');return supabase;}
-export function redirectUrl(){return window.location.origin+window.location.pathname;}

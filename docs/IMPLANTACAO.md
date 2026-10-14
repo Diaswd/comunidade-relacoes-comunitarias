@@ -1,6 +1,6 @@
 # Implantação e migração
 
-## Estado em 13/10/2026
+## Estado em 14/10/2026
 
 - Projeto Supabase de destino: `cubnbgggohmrwaohxibr`.
 - Schema `20261013123206_community_workspace.sql` aplicado pelo SQL Editor, após testes locais.
@@ -8,8 +8,9 @@
 - Importados do protótipo: 12 demandas, 3 compromissos, 3 encaminhamentos e 12 registros de histórico; mais 1 evento de auditoria da migração.
 - Três cadastros de integrantes: administrador aprovado pelo proprietário e dois perfis fictícios sem login.
 - O banco e a publicação anteriores foram preservados. A importação é um snapshot; edições posteriores na versão anterior não são sincronizadas.
-- O cadastro autorizado da Coordenação ainda precisa ser vinculado a uma conta confirmada no Supabase Auth. Nenhuma senha foi criada pelo agente.
-- Publicação externa, configuração final de e-mail e teste de entrada com o administrador ainda pendentes.
+- Site publicado em https://diaswd.github.io/comunidade-relacoes-comunitarias/ e código público por autorização do proprietário.
+- Conta inicial criada e ativada pelo proprietário no Supabase Auth. O vínculo com o perfil de Coordenação ocorre no primeiro login. Nenhuma senha foi criada pelo agente.
+- Cadastro público e login anônimo desativados. Contas internas criadas administrativamente, sem envio de e-mail. Teste de entrada com o administrador ainda pendente.
 
 ## Migrações
 
@@ -37,7 +38,7 @@ insert into public.rc_members (name,email,"jobTitle",role)
 values ('Nome da pessoa','email-aprovado@example.org','Coordenação do setor','Coordenação');
 ```
 
-O usuário cria sua senha pela interface e confirma o e-mail. Não insira manualmente senhas ou identidades na tabela `auth.users` e não desative a confirmação de e-mail para contornar problemas de entrega.
+No painel Supabase, abra **Authentication → Users → Add user → Create new user** e use o mesmo e-mail do perfil autorizado. Mantenha **Auto confirm user?** marcado para ativar essa conta sem enviar e-mail. A senha é definida diretamente no formulário pelo operador autorizado; nunca no chat. Não insira manualmente senhas ou identidades na tabela `auth.users`.
 
 ## Importação do protótipo anterior
 
@@ -51,15 +52,28 @@ Revise o SQL gerado e aplique em uma transação. O script converte IDs determin
 
 ## Configurar Auth
 
-No Supabase, **Authentication → Emails → SMTP Settings**: configure um provedor de envio da organização. O SMTP padrão é destinado a testes, limita a entrega aos e-mails da equipe do projeto Supabase e impõe limites de envio. Não adicione usuários da aplicação como administradores do projeto apenas para contornar esse limite.
+Em **Authentication → Sign In / Providers**:
+
+- **Allow new users to sign up:** desativado. Essa restrição também bloqueia cadastros pela API pública.
+- Provedor **Email:** ativo; senha mínima de 12 caracteres.
+- **Anonymous sign-ins:** desativado.
+- **Confirm email:** pode permanecer ativo. A opção **Auto confirm user?** no cadastro administrativo ativa apenas a conta criada, sem envio de mensagem.
+
+Não é necessário configurar SMTP para esse fluxo. Não use **Send invitation**, pois esse caminho depende de e-mail. Não adicione integrantes como administradores do projeto Supabase apenas para criar suas contas de aplicação.
 
 Em **Authentication → URL Configuration**:
 
-- `Site URL`: endereço final da aplicação, com o caminho do projeto se usar Pages.
-- `Redirect URLs`: exatamente o endereço final e, durante desenvolvimento, `http://127.0.0.1:5174/`.
+- `Site URL`: `https://diaswd.github.io/comunidade-relacoes-comunitarias/`.
+- `Redirect URLs`: exatamente esse endereço final. Adicione endereço local somente quando necessário ao desenvolvimento.
 - Não use curingas amplos em produção.
 
-Mantenha confirmação de e-mail ativa. A aplicação solicita senha de pelo menos 12 caracteres; configure o mínimo correspondente no servidor. Senhas devem ser definidas diretamente pelas pessoas, nunca enviadas por chat ou commit.
+A aplicação solicita senha de pelo menos 12 caracteres. Senhas devem ser definidas diretamente no formulário, nunca enviadas por chat ou commit. Após entrar, a pessoa pode usar **Alterar minha senha**.
+
+## Redefinição administrativa de senha
+
+Não há recuperação automática por e-mail. Quando alguém perder o acesso, a Coordenação deve confirmar a identidade e encaminhar a um operador autorizado do Supabase. O Auth oferece `auth.admin.updateUserById(id, { password })` para redefinição em um ambiente seguro no servidor. Use uma credencial administrativa somente nesse ambiente; nunca na aplicação, nas variáveis `VITE_*`, no GitHub ou no console do navegador. A interface atual não implementa esse procedimento administrativo. Não apague e recrie contas para trocar senhas, pois isso altera sua identidade e seus vínculos.
+
+Documentação: [atualização administrativa de usuários](https://supabase.com/docs/reference/javascript/auth-admin-updateuserbyid).
 
 ## Critérios para a troca definitiva
 
@@ -70,4 +84,4 @@ Mantenha confirmação de e-mail ativa. A aplicação solicita senha de pelo men
 5. Definir backup, restauração, retenção e responsáveis operacionais antes de usar dados reais.
 6. Encerrar a entrada de dados na versão anterior e comunicar qual endereço passa a ser usado.
 
-O código inclui testes de banco para esses controles, mas eles não substituem a validação de e-mail, hospedagem e navegação no ambiente final.
+O código inclui testes de banco e Excel para esses controles, mas eles não substituem a validação de login, hospedagem e navegação no ambiente final.

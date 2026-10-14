@@ -2,12 +2,14 @@
 
 Plataforma responsiva para organizar o trabalho do setor de Relações Comunitárias de São Leopoldo: demandas, agenda semanal, encaminhamentos, relatórios Excel e acessos da equipe.
 
+**Site:** https://diaswd.github.io/comunidade-relacoes-comunitarias/
+
 **Ambiente em validação.** Use dados fictícios. Não há integração oficial com sistemas da prefeitura. A adequação para uso institucional e dados pessoais precisa ser validada pela prefeitura.
 
 ## Arquitetura
 
 - React + TypeScript + Vite: interface estática, publicável no GitHub Pages ou em outro serviço de hospedagem estática.
-- Supabase Auth: contas individuais, confirmação de e-mail, senha e recuperação de acesso.
+- Supabase Auth: contas individuais criadas pela administração, login por e-mail e senha, sem confirmação por e-mail nem cadastro público.
 - Supabase Postgres: registros persistentes, permissões verificadas no servidor, controle de versões e auditoria transacional.
 - GitHub: código e verificações automáticas. Senhas, backups e dados operacionais não pertencem ao repositório.
 
@@ -25,7 +27,7 @@ npm run dev
 Abra `http://127.0.0.1:5174/`. Nunca use `service_role`, `sb_secret_` ou credenciais de banco em variáveis `VITE_*`: essas variáveis ficam visíveis no navegador.
 
 ```sh
-npm test          # PostgreSQL real em WASM: permissões, conflitos e auditoria
+npm test          # Permissões, conflitos, auditoria e conteúdo do Excel
 npm run build    # TypeScript + build estático em dist/
 npm run db:check # Verificação remota somente leitura, sem autenticação
 ```
@@ -34,14 +36,17 @@ npm run db:check # Verificação remota somente leitura, sem autenticação
 
 Consulte [implantação e migração](docs/IMPLANTACAO.md). A migração versionada está em `supabase/migrations/`. Ela cria tabelas com prefixo `rc_` e funções internas em `rc_private`.
 
-O primeiro administrador é cadastrado separadamente por um operador autorizado do banco. O sistema **não transforma a primeira pessoa que se cadastrar em administrador**. Somente um e-mail previamente autorizado, confirmado pelo Supabase Auth, pode vincular sua conta ao cadastro do setor.
+O primeiro administrador é cadastrado separadamente por um operador autorizado do banco. O sistema **não transforma a primeira pessoa que entrar em administrador**. Somente uma conta ativada pela administração no Supabase Auth, com e-mail previamente autorizado em `rc_members`, pode vincular-se ao cadastro do setor.
 
-1. Configure o envio de e-mails e os endereços de redirecionamento no Supabase.
-2. Na tela **Primeiro acesso**, a pessoa informa o e-mail aprovado e cria a própria senha.
-3. Confirma o e-mail no mesmo navegador e entra no sistema.
-4. Em **Equipe e acessos**, a Coordenação cadastra os demais integrantes por e-mail, cargo e permissão.
+1. Mantenha **Allow new users to sign up** desativado em **Authentication → Sign In / Providers**.
+2. Em **Equipe e acessos**, a Coordenação cadastra cada integrante por e-mail, cargo e permissão. O primeiro perfil é preparado no banco pelo operador autorizado.
+3. Um administrador do projeto Supabase abre **Authentication → Users → Add user → Create new user**, informa o mesmo e-mail e uma senha, mantendo **Auto confirm user?** marcado.
+4. A pessoa entra no site com seu e-mail e senha. O vínculo com o perfil ocorre no primeiro acesso autorizado.
+5. Depois de entrar, pode usar **Alterar minha senha** no menu lateral.
 
-Cadastrar integrantes não envia convites automaticamente. Cada integrante cria sua própria senha. Cargo é informativo; somente o perfil de permissão define o acesso.
+Cadastrar integrantes na plataforma define permissões, mas não cria a conta no Auth nem envia convites. Cargo é informativo; somente o perfil de permissão define o acesso. O e-mail funciona como identificador de login; não há botão de login com Google.
+
+**Senha esquecida:** a pessoa deve procurar a Coordenação. A redefinição depende de um operador autorizado do Supabase; não existe recuperação automática por e-mail nesta versão. Consulte o procedimento administrativo em [implantação](docs/IMPLANTACAO.md). Não conceda acesso ao painel do projeto aos integrantes apenas para criar contas.
 
 | Perfil | Permissões |
 | --- | --- |
@@ -65,7 +70,7 @@ O workflow `Verificar` executa testes e build a cada push. O workflow `Publicar 
 
 Configure as variáveis de Actions `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. Elas são públicas por definição, não substituem RLS. Para Pages, selecione **Settings → Pages → GitHub Actions** e execute o workflow manual. A base do projeto é definida automaticamente.
 
-No plano gratuito, GitHub Pages exige repositório público. Alterar a visibilidade exige uma decisão do proprietário; não é necessário tornar os dados do Supabase públicos para publicar a interface. Outra opção é hospedar `dist/` em um serviço que aceite o repositório privado.
+O repositório atual foi tornado público com autorização do proprietário e o site está publicado no GitHub Pages. O código público não concede acesso aos registros do Supabase.
 
 ## Limites atuais
 
@@ -74,6 +79,6 @@ No plano gratuito, GitHub Pages exige repositório público. Alterar a visibilid
 - O relatório semanal mostra criação/conclusão no período e pendências atuais; não reconstrói saldos históricos.
 - Histórico por consulta limitado às 250 operações mais recentes.
 - Sem sincronização contínua com o protótipo anterior, notificações automáticas ou integrações de secretarias.
-- O envio de e-mail depende do SMTP configurado no Supabase.
+- Não há envio de e-mails ou recuperação automática de senha. O fluxo interno atual não depende de SMTP.
 
-Fontes: [Supabase Auth e SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages).
+Fontes: [Criação administrativa de contas](https://supabase.com/docs/reference/javascript/auth-admin-createuser), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages).

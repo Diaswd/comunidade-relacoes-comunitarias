@@ -6,6 +6,10 @@ if(!url||!key)throw Error('Configure a URL e a chave pública em .env.local.');
 const headers={apikey:key,'Content-Type':'application/json'};
 const auth=await fetch(url+'/auth/v1/settings',{headers});
 if(!auth.ok)throw Error('Auth não respondeu: '+auth.status);
+const settings=await auth.json();
+if(settings.disable_signup!==true)throw Error('O cadastro público precisa estar desativado para o acesso interno.');
+if(settings.external?.anonymous_users!==false)throw Error('O acesso anônimo do Auth precisa estar desativado.');
+console.log('Auth: cadastro público e login anônimo desativados');
 for(const table of ['rc_members','rc_demands','rc_events','rc_referrals','rc_audit']){
  const r=await fetch(`${url}/rest/v1/${table}?select=id&limit=1`,{headers});
  const j=await r.json();if(r.ok&&(!Array.isArray(j)||j.length))throw Error('Acesso anônimo indevido em '+table);
