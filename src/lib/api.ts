@@ -14,6 +14,9 @@ async function call<T>(name:string,args:Record<string,unknown>={}){
   return data as T;
 }
 export async function loadWorkspace(){return call<State>('rc_workspace');}
+export type DemoCleanup={demands:number;events:number;referrals:number;members:number;total:number;preserved:number;token:string;deleted:boolean};
+export async function previewDemoCleanup(){return call<DemoCleanup>('rc_demo_cleanup');}
+export async function deleteDemonstrations(token:string){return call<DemoCleanup>('rc_demo_cleanup',{p_confirm:true,p_expected:token});}
 export async function saveRecord(action:string,data:unknown){
   const schema={demand:demandSchema,event:eventSchema,referral:referralSchema,member:memberSchema}[action];
   let parsed=data;

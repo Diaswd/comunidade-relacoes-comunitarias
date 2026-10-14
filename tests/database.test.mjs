@@ -115,6 +115,57 @@ test('Postgres: authorization, mutations, audit and optimistic conflicts',async 
   await rpc(reader,'rc_log_export',[JSON.stringify({status:'Todas'}),1,'2026-10-12']);
   const logs=await rpc(admin,'rc_history');assert.ok(logs.some(x=>x.action==='Exportação Excel preparada'&&x.actorId===reader));
  });
+ const demoMember=uid(60),demoDemand=uid(61),demoEdited=uid(62),demoNote=uid(63),demoLinked=uid(64),demoReferral=uid(70),demoEvent=uid(80),demoEditedEvent=uid(81);
+ let cleanupPreview;
+ await t.test('cleanup preview is coordinator-only and does not delete records',async()=>{
+  await db.query('insert into public.rc_members(id,name,email,role,sample) values($1,$2,$3,$4,1)',[demoMember,'Exemplo','demo@example.invalid','Equipe']);
+  for(const id of [demoDemand,demoEdited,demoNote,demoLinked])await db.query('insert into public.rc_demands(id,code,title,neighborhood,description,priority,"ownerId",due,status) values($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,'DEMO-'+id.slice(-2),'Exemplo original','Centro','Fictício','Normal',demoMember,'2026-10-22','Nova']);
+  await db.query('insert into public.rc_referrals(id,"demandId",department,due,"sentAt",status) values($1,$2,$3,$4,$5,$6)',[demoReferral,demoDemand,'Área fictícia','2026-10-22','2026-10-14','Aguardando retorno']);
+  for(const [id,time,endTime] of [[demoEvent,'08:00','09:00'],[demoEditedEvent,'10:00','11:00']])await db.query('insert into public.rc_events(id,title,date,time,"endTime",location,kind,"ownerId",status) values($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,'Agenda fictícia','2026-10-22',time,endTime,'Centro','Visita',demoMember,'Agendado']);
+  for(const [kind,table,ids] of [['member','rc_members',[demoMember]],['demand','rc_demands',[demoDemand,demoEdited,demoNote,demoLinked]],['event','rc_events',[demoEvent,demoEditedEvent]],['referral','rc_referrals',[demoReferral]]])await db.query(`insert into rc_private.demo_records select $1,id,to_jsonb(t) from public.${table} t where id=any($2::uuid[])`,[kind,ids]);
+  for(const id of [null,editor,reader])await assert.rejects(rpc(id,'rc_demo_cleanup'),/permission denied|coordenação/);
+  await assert.rejects(as(admin,'delete from rc_private.demo_records'),/permission denied/);
+  await assert.rejects(as(admin,'delete from public.rc_demands where id=$1',[demoDemand]),/permission denied/);
+  const p=await rpc(admin,'rc_demo_cleanup');assert.equal(p.total,8);assert.equal(p.deleted,false);
+  assert.equal((await db.query('select count(*)::int as n from public.rc_demands where id=$1',[demoDemand])).rows[0].n,1);
+ });
+ await t.test('cleanup preserves edited examples, notes, new referrals and their owners',async()=>{
+  const d=(await db.query('select * from public.rc_demands where id=$1',[demoEdited])).rows[0];
+  await save(editor,'demand',{...d,title:'Agora é uma demanda do setor'});
+  await save(editor,'note',{id:demoNote,note:'Acompanhamento feito pela equipe'});
+  await save(editor,'referral',{demandId:demoLinked,department:'Área nova',sentAt:'2026-10-14',due:'2026-10-22',status:'Aguardando retorno',response:''});
+  cleanupPreview=await rpc(admin,'rc_demo_cleanup');
+  assert.deepEqual([cleanupPreview.demands,cleanupPreview.events,cleanupPreview.referrals,cleanupPreview.members,cleanupPreview.preserved],[1,2,1,0,4]);
+ });
+ await t.test('cleanup rejects stale confirmation and missing token atomically',async()=>{
+  const e=(await db.query('select * from public.rc_events where id=$1',[demoEditedEvent])).rows[0];
+  await save(editor,'event',{...e,title:'Compromisso atualizado'});
+  await assert.rejects(rpc(admin,'rc_demo_cleanup',[true,cleanupPreview.token]),/lista mudou/);
+  await assert.rejects(rpc(admin,'rc_demo_cleanup',[true,null]),/lista mudou/);
+  assert.equal((await db.query('select count(*)::int as n from public.rc_demands where id=$1',[demoDemand])).rows[0].n,1);
+ });
+ await t.test('cleanup deletes only unchanged registered examples and retains audit snapshots',async()=>{
+  const p=await rpc(admin,'rc_demo_cleanup');assert.equal(p.total,3);
+  const result=await rpc(admin,'rc_demo_cleanup',[true,p.token]);assert.equal(result.deleted,true);
+  assert.equal((await db.query('select count(*)::int as n from public.rc_demands where id=$1',[demoDemand])).rows[0].n,0);
+  assert.equal((await db.query('select count(*)::int as n from public.rc_events where id=$1',[demoEvent])).rows[0].n,0);
+  const kept=await rpc(admin,'rc_workspace');
+  for(const id of [first.id,demoEdited,demoNote,demoLinked])assert.ok(kept.demands.some(d=>d.id===id));
+  assert.ok(kept.members.some(m=>m.id===demoMember));assert.ok(kept.members.some(m=>m.id===admin&&m.authId===admin));
+  const logs=await rpc(admin,'rc_history');const log=logs.find(a=>a.action==='Demonstração excluída'&&a.entityId===demoDemand);
+  assert.equal(log.before.title,'Exemplo original');assert.equal(log.actorId,admin);assert.equal(log.after,null);
+  assert.ok(logs.some(a=>a.entityId===first.id));
+  const empty=await rpc(admin,'rc_demo_cleanup');assert.equal(empty.total,0);assert.equal(empty.preserved,5);
+  await rpc(admin,'rc_demo_cleanup',[true,empty.token]);assert.equal((await rpc(admin,'rc_history')).length,logs.length);
+ });
+ await t.test('cleanup removes unused fictitious members without touching real accounts',async()=>{
+  const unused=uid(85);await db.query('insert into public.rc_members(id,name,email,role,sample) values($1,$2,$3,$4,1)',[unused,'Exemplo sem vínculos','unused@example.invalid','Equipe']);
+  await db.query("insert into rc_private.demo_records select 'member',id,to_jsonb(m) from public.rc_members m where id=$1",[unused]);
+  const p=await rpc(admin,'rc_demo_cleanup');assert.equal(p.members,1);
+  await rpc(admin,'rc_demo_cleanup',[true,p.token]);
+  assert.equal((await db.query('select count(*)::int as n from public.rc_members where id=$1',[unused])).rows[0].n,0);
+  assert.equal((await rpc(admin,'rc_workspace')).me.authId,admin);
+ });
  await t.test('deactivation immediately blocks existing sessions and assignments',async()=>{
   await save(admin,'member',{...editorMember,active:false});
   await assert.rejects(rpc(editor,'rc_workspace'),/inativo/);
@@ -130,7 +181,7 @@ test('Postgres: authorization, mutations, audit and optimistic conflicts',async 
  await t.test('all tables have RLS; no public definer functions or anonymous RPC grants',async()=>{
   const tables=await db.query("select relname,relrowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r' and relname like 'rc_%'");assert.equal(tables.rows.length,5);assert.ok(tables.rows.every(x=>x.relrowsecurity));
   const functions=await db.query("select proname,prosecdef from pg_proc where pronamespace='public'::regnamespace and proname like 'rc_%'");assert.ok(functions.rows.every(x=>!x.prosecdef));
-  for(const name of ['rc_workspace()','rc_save_record(text,jsonb)','rc_history(uuid)','rc_log_export(jsonb,integer,date)'])assert.equal((await db.query('select has_function_privilege($1,$2,$3) as allowed',['anon','public.'+name,'EXECUTE'])).rows[0].allowed,false);
+  for(const name of ['rc_workspace()','rc_save_record(text,jsonb)','rc_history(uuid)','rc_log_export(jsonb,integer,date)','rc_demo_cleanup(boolean,text)'])assert.equal((await db.query('select has_function_privilege($1,$2,$3) as allowed',['anon','public.'+name,'EXECUTE'])).rows[0].allowed,false);
  });
  await db.close();
 });

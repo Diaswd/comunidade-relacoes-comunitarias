@@ -62,7 +62,8 @@ Cadastrar integrantes na plataforma define permissões, mas não cria a conta no
 - Autor, horário, código e versões são controlados pelo servidor. Auditoria gravada na mesma transação da mudança.
 - Dados de contato dos integrantes não são compartilhados indiscriminadamente com outros perfis.
 - Edições concorrentes são recusadas quando a versão mudou. Conflitos de horário do mesmo responsável são verificados no banco.
-- Não existe exclusão de registros na interface. Retenção, exclusão administrativa e backups precisam de política institucional própria. Administradores do banco continuam tendo poderes sobre a auditoria; ela não é um registro imutável certificado.
+- A Coordenação pode excluir somente exemplos importados e identificados, em **Privacidade e auditoria → Excluir demonstrações**. A tela confere as quantidades e exige digitar `EXCLUIR`. Novos registros, contas reais, exemplos alterados e auditoria são preservados. Não há exclusão geral de registros na interface.
+- Retenção, exclusão administrativa e backups precisam de política institucional própria. Administradores do banco continuam tendo poderes sobre a auditoria; ela não é um registro imutável certificado.
 
 ## Publicação
 

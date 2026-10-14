@@ -25,6 +25,16 @@
 
 ## Migrações
 
+A opção **Excluir demonstrações** usa a migração `20261014162619_demo_cleanup.sql`, aplicada pelo SQL Editor após falha de estado de requisição do conector de migrações. Ela cria o manifesto privado e a RPC de conferência/exclusão. Assim como a migração inicial, sua versão precisa ser reconciliada no histórico do CLI antes de um futuro `db push`.
+
+O manifesto foi preparado a partir do arquivo original revisado de importação, com `node scripts/register-demo.mjs exports/import-d1.local.sql exports/demo-manifest.local.sql`. Foram identificadas 12 demandas, 3 compromissos, 3 encaminhamentos e 2 perfis fictícios. Essa preparação não exclui dados. Nunca registre automaticamente todas as linhas atuais como demonstrações.
+
+Somente a Coordenação pode conferir ou executar a exclusão. O banco compara cada exemplo com sua versão original, preserva alterações, novos acompanhamentos e vínculos com trabalho mantido. A conferência devolve um identificador da seleção; se ela mudar antes da confirmação, a exclusão é recusada. Todas as remoções e seus conteúdos anteriores ficam registrados na auditoria, sem excluir contas do Auth. Não há botão de desfazer.
+
+Os 27 testes locais passaram, incluindo acesso negado para Equipe/Consulta/visitantes, ausência de efeitos na conferência, confirmação desatualizada, preservação de trabalho novo/alterado, auditoria e repetição sem efeitos. O build passou.
+
+O Security Advisor após essa migração apontou dois avisos: [RLS sem política](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) no manifesto privado (intencional: acesso direto negado a todos os clientes, somente a função validada o utiliza) e [proteção contra senhas vazadas desativada](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) no Auth. A opção de limpeza não altera as configurações de senha.
+
 Para um projeto novo, revise e aplique a migração pelo Supabase CLI ou SQL Editor. Não reaplique a migração inicial em um banco já migrado.
 
 O projeto atual recebeu a migração pelo SQL Editor. Isso **não registra automaticamente** a versão no histórico do Supabase CLI. Antes de usar `db push`, um operador autenticado deve confirmar o schema e reconciliar o histórico:
@@ -35,6 +45,7 @@ npx supabase link --project-ref cubnbgggohmrwaohxibr
 npx supabase migration list
 # Somente após confirmar que a migração já está aplicada:
 npx supabase migration repair 20261013123206 --status applied
+npx supabase migration repair 20261014162619 --status applied
 npx supabase migration list
 ```
 
