@@ -40,11 +40,11 @@ O primeiro administrador é cadastrado separadamente por um operador autorizado 
 
 1. Mantenha **Allow new users to sign up** desativado em **Authentication → Sign In / Providers**.
 2. Em **Equipe e acessos**, a Coordenação cadastra cada integrante por e-mail, cargo e permissão. O primeiro perfil é preparado no banco pelo operador autorizado.
-3. Um administrador do projeto Supabase abre **Authentication → Users → Add user → Create new user**, informa o mesmo e-mail e uma senha, mantendo **Auto confirm user?** marcado.
-4. A pessoa entra no site com seu e-mail e senha. O vínculo com o perfil ocorre no primeiro acesso autorizado.
+3. A Coordenação usa **Criar acessos da equipe**, confere os integrantes pendentes e informa uma senha inicial para as contas novas. As contas são ativadas sem envio de e-mail. O administrador inicial ainda deve ser criado pelo painel Supabase, conforme a documentação de implantação.
+4. A pessoa entra no site com seu e-mail e a senha inicial. Contas que já existem mantêm sua senha, inclusive a conta de quem realiza a operação.
 5. Depois de entrar, pode usar **Alterar minha senha** no menu lateral.
 
-Cadastrar integrantes na plataforma define permissões, mas não cria a conta no Auth nem envia convites. Cargo é informativo; somente o perfil de permissão define o acesso. O e-mail funciona como identificador de login; não há botão de login com Google.
+Cadastrar integrantes define permissões; a ação **Criar acessos da equipe** cria os logins pendentes no Auth. A senha inicial vale para o lote confirmado e não fica armazenada como padrão para cadastros futuros. Cargo é informativo; somente o perfil de permissão define o acesso. O e-mail funciona como identificador de login; não há botão de login com Google.
 
 **Senha esquecida:** a pessoa deve procurar a Coordenação. A redefinição depende de um operador autorizado do Supabase; não existe recuperação automática por e-mail nesta versão. Consulte o procedimento administrativo em [implantação](docs/IMPLANTACAO.md). Não conceda acesso ao painel do projeto aos integrantes apenas para criar contas.
 

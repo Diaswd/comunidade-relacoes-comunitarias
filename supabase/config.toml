@@ -1,0 +1,5 @@
+project_id = "comunidade-relacoes-comunitarias"
+
+[functions.provision-team]
+verify_jwt = true
+entrypoint = "./functions/provision-team/index.ts"

@@ -14,6 +14,13 @@ async function call<T>(name:string,args:Record<string,unknown>={}){
   return data as T;
 }
 export async function loadWorkspace(){return call<State>('rc_workspace');}
+export type PendingAccount={id:string;name:string;email:string;role:string;version:number;existingAuthId:string|null};
+export async function pendingAccounts(){return call<PendingAccount[]>('rc_pending_accounts');}
+export async function provisionAccounts(password:string,members:PendingAccount[]){
+ const{data,error}=await getClient().functions.invoke('provision-team',{body:{password,members:members.map(m=>({id:m.id,version:m.version}))}});
+ if(error){let message='Não foi possível criar os acessos. Tente novamente.';try{const detail=await error.context?.json();if(detail?.error)message=detail.error}catch{}throw Error(message)}
+ return data as {results:{id:string;status:'created'|'linked'|'failed';message?:string}[]};
+}
 export type DemoCleanup={demands:number;events:number;referrals:number;members:number;total:number;preserved:number;token:string;deleted:boolean};
 export async function previewDemoCleanup(){return call<DemoCleanup>('rc_demo_cleanup');}
 export async function deleteDemonstrations(token:string){return call<DemoCleanup>('rc_demo_cleanup',{p_confirm:true,p_expected:token});}

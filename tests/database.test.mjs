@@ -166,6 +166,26 @@ test('Postgres: authorization, mutations, audit and optimistic conflicts',async 
   assert.equal((await db.query('select count(*)::int as n from public.rc_members where id=$1',[unused])).rows[0].n,0);
   assert.equal((await rpc(admin,'rc_workspace')).me.authId,admin);
  });
+ await t.test('pending login accounts are coordinator-only and exclude existing access and examples',async()=>{
+  for(const id of [null,editor,reader])await assert.rejects(rpc(id,'rc_pending_accounts'),/permission denied|coordenação/);
+  const list=await rpc(admin,'rc_pending_accounts');assert.ok(!list.some(m=>m.id===admin||m.id===demoMember));
+ });
+ await t.test('login activation validates identity, approved email, role and version without passwords',async()=>{
+  const memberId=uid(90),authId=uid(91);
+  await db.query('insert into public.rc_members(id,name,email,role) values($1,$2,$3,$4)',[memberId,'Nova pessoa','new@example.test','Equipe']);
+  const before=await rpc(admin,'rc_pending_accounts');assert.equal(before.find(m=>m.id===memberId).existingAuthId,null);
+  await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[authId,'new@example.test']);
+  assert.equal((await rpc(admin,'rc_pending_accounts')).find(m=>m.id===memberId).existingAuthId,authId);
+  await assert.rejects(rpc(editor,'rc_link_member_login',[memberId,authId,1]),/coordenação/);
+  await assert.rejects(rpc(admin,'rc_link_member_login',[memberId,outsider,1]),/e-mail cadastrado/);
+  await assert.rejects(rpc(admin,'rc_link_member_login',[memberId,authId,2]),/cadastro mudou/);
+  await assert.rejects(rpc(admin,'rc_link_member_login',[admin,admin,2]),/cadastro mudou/);
+  await rpc(admin,'rc_link_member_login',[memberId,authId,1]);
+  const account=(await rpc(admin,'rc_workspace')).members.find(m=>m.id===memberId);assert.equal(account.authId,authId);assert.equal(account.version,2);
+  await assert.rejects(rpc(admin,'rc_link_member_login',[memberId,authId,2]),/cadastro mudou/);
+  const log=(await rpc(admin,'rc_history')).find(a=>a.action==='Acesso de login ativado'&&a.entityId===memberId);
+  assert.equal(log.actorId,admin);assert.ok(!Object.hasOwn(log.after,'password'));
+ });
  await t.test('deactivation immediately blocks existing sessions and assignments',async()=>{
   await save(admin,'member',{...editorMember,active:false});
   await assert.rejects(rpc(editor,'rc_workspace'),/inativo/);
@@ -181,7 +201,7 @@ test('Postgres: authorization, mutations, audit and optimistic conflicts',async 
  await t.test('all tables have RLS; no public definer functions or anonymous RPC grants',async()=>{
   const tables=await db.query("select relname,relrowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r' and relname like 'rc_%'");assert.equal(tables.rows.length,5);assert.ok(tables.rows.every(x=>x.relrowsecurity));
   const functions=await db.query("select proname,prosecdef from pg_proc where pronamespace='public'::regnamespace and proname like 'rc_%'");assert.ok(functions.rows.every(x=>!x.prosecdef));
-  for(const name of ['rc_workspace()','rc_save_record(text,jsonb)','rc_history(uuid)','rc_log_export(jsonb,integer,date)','rc_demo_cleanup(boolean,text)'])assert.equal((await db.query('select has_function_privilege($1,$2,$3) as allowed',['anon','public.'+name,'EXECUTE'])).rows[0].allowed,false);
+  for(const name of ['rc_workspace()','rc_save_record(text,jsonb)','rc_history(uuid)','rc_log_export(jsonb,integer,date)','rc_demo_cleanup(boolean,text)','rc_pending_accounts()','rc_link_member_login(uuid,uuid,integer)'])assert.equal((await db.query('select has_function_privilege($1,$2,$3) as allowed',['anon','public.'+name,'EXECUTE'])).rows[0].allowed,false);
  });
  await db.close();
 });

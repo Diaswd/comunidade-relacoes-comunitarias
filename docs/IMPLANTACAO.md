@@ -62,6 +62,18 @@ values ('Nome da pessoa','email-aprovado@example.org','Coordenação do setor','
 
 No painel Supabase, abra **Authentication → Users → Add user → Create new user** e use o mesmo e-mail do perfil autorizado. Mantenha **Auto confirm user?** marcado para ativar essa conta sem enviar e-mail. A senha é definida diretamente no formulário pelo operador autorizado; nunca no chat. Não insira manualmente senhas ou identidades na tabela `auth.users`.
 
+## Criar os acessos da equipe pelo sistema
+
+A migração `20261014172347_internal_accounts.sql` foi aplicada pelo conector Supabase em 14/10/2026 e consta no histórico remoto. O arquivo local, inicialmente gerado pelo CLI, foi renomeado para a versão atribuída pelo conector. As duas migrações anteriores continuam exigindo a reconciliação descrita acima.
+
+A Edge Function `provision-team` foi publicada com verificação de JWT habilitada. Ela usa as variáveis administrativas fornecidas pelo ambiente de execução do Supabase, sem credencial administrativa no cliente. Em outro ambiente, aplique a migração e publique a função antes da interface; ajuste a origem permitida em `handler.ts` se a hospedagem mudar. Para publicar pelo CLI, consulte `supabase functions deploy --help` e use `supabase functions deploy provision-team --project-ref ID_DO_PROJETO` com um operador autenticado.
+
+Em **Equipe e acessos → Criar acessos da equipe**, a Coordenação confere os integrantes ativos, reais e ainda sem vínculo e digita uma senha inicial de 12 a 128 caracteres. Até 50 acessos podem ser criados por lote. Não há envio de e-mail. A troca posterior em **Alterar minha senha** é opcional.
+
+A função valida a sessão e a permissão de Coordenação antes de cada criação. Contas existentes são somente vinculadas, com a senha preservada; não existe redefinição de senha nesse fluxo. Os vínculos usam a versão revisada do cadastro e geram auditoria sem credenciais. Se parte do lote falhar, confira a lista novamente: contas já criadas podem ser vinculadas na tentativa seguinte, sem recriação ou troca de senha. A senha informada é transitória e não é persistida como configuração padrão do sistema.
+
+Foram aprovados 34 testes locais e o build: criação e vínculo de contas, bloqueio de visitantes/Equipe/Consulta, revogação durante o lote, conflito de versões, proteção das contas existentes e ausência de senhas na auditoria e nas respostas. A verificação remota confirmou as duas RPCs instaladas e inacessíveis ao papel anônimo. O Security Advisor manteve apenas os dois avisos já documentados na seção de migrações, sem novos apontamentos.
+
 ## Importação do protótipo anterior
 
 O export completo original fica apenas no armazenamento local em `exports/d1-backup.json`, fora do Git. Preserve esse arquivo e o banco de origem até a validação da migração.
