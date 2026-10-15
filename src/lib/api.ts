@@ -2,8 +2,10 @@ import {getClient} from './supabase';
 import {type State,type Audit} from './domain';
 import {buildExport} from './export-data';
 import {demandSchema,eventSchema,referralSchema,memberSchema} from './validation';
-async function call<T>(name:string,args:Record<string,unknown>={}){
-  const {data,error}=await getClient().rpc(name,args);
+import {withDeadline} from './request-deadline';
+async function call<T>(name:string,args:Record<string,unknown>={},signal?:AbortSignal){
+  const request=getClient().rpc(name,args);
+  const {data,error}=await (signal?request.abortSignal(signal):request);
   if(error){
     if(error.code==='PGRST202'||error.code==='42883')throw Error('A estrutura do banco ainda não foi aplicada ao Supabase. Solicite a configuração à coordenação.');
     if(error.code==='23505')throw Error('Já existe um cadastro com esses dados.');
@@ -15,7 +17,7 @@ async function call<T>(name:string,args:Record<string,unknown>={}){
 }
 export async function loadWorkspace(){return call<State>('rc_workspace');}
 export type PendingAccount={id:string;name:string;email:string;role:string;version:number;existingAuthId:string|null};
-export async function pendingAccounts(){return call<PendingAccount[]>('rc_pending_accounts');}
+export async function pendingAccounts(signal?:AbortSignal){return withDeadline(s=>call<PendingAccount[]>('rc_pending_accounts',{},s),{signal,timeoutMs:15000,message:'A consulta demorou mais que o esperado. Confira sua conexão e tente novamente. Se continuar, recarregue a página.'});}
 export async function provisionAccounts(password:string,members:PendingAccount[]){
  const{data,error}=await getClient().functions.invoke('provision-team',{body:{password,members:members.map(m=>({id:m.id,version:m.version}))}});
  if(error){let message='Não foi possível criar os acessos. Tente novamente.';try{const detail=await error.context?.json();if(detail?.error)message=detail.error}catch{}throw Error(message)}

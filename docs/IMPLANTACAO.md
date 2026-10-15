@@ -74,6 +74,8 @@ A função valida a sessão e a permissão de Coordenação antes de cada criaç
 
 Foram aprovados 34 testes locais e o build: criação e vínculo de contas, bloqueio de visitantes/Equipe/Consulta, revogação durante o lote, conflito de versões, proteção das contas existentes e ausência de senhas na auditoria e nas respostas. A verificação remota confirmou as duas RPCs instaladas e inacessíveis ao papel anônimo. O Security Advisor manteve apenas os dois avisos já documentados na seção de migrações, sem novos apontamentos.
 
+Em 15/10/2026, a consulta dos acessos pendentes ficou sem resposta em uma sessão do navegador; recarregar a página recuperou a lista. A conferência agora permite cancelamento e limita toda a operação a 15 segundos, inclusive uma eventual espera pela sessão antes da requisição. O erro oferece nova tentativa, e respostas de consultas canceladas não alteram a tela reaberta. Quatro testes de sucesso, falha, prazo e cancelamento elevaram o total para 38. Isso não cancela nem repete automaticamente uma criação de contas já enviada.
+
 ## Importação do protótipo anterior
 
 O export completo original fica apenas no armazenamento local em `exports/d1-backup.json`, fora do Git. Preserve esse arquivo e o banco de origem até a validação da migração.
