@@ -50,9 +50,21 @@ Cadastrar integrantes define permissões; a ação **Criar acessos da equipe** c
 
 | Perfil | Permissões |
 | --- | --- |
-| Coordenação | Editar todos os registros, exportar, gerenciar acessos e consultar auditoria geral |
-| Equipe | Editar todas as demandas, agenda e encaminhamentos; registrar acompanhamentos e exportar |
+| Coordenação | Editar, anexar e excluir registros; recuperar pela lixeira; exportar; gerenciar acessos e auditoria geral |
+| Equipe | Editar, anexar e excluir demandas, agenda e encaminhamentos; registrar acompanhamentos e exportar |
 | Consulta | Consultar os registros e históricos das demandas e exportar, sem alterar dados |
+
+## Endereços, anexos e exclusão
+
+Em **Cadastrar demanda**, digite uma rua ou local e selecione uma das sugestões. A busca usa Photon/OpenStreetMap na região de São Leopoldo; o botão **Maps** abre a localização no Google Maps. Também é possível preencher manualmente ou colar um link do Maps. Endereço e link aparecem nos detalhes e no Excel.
+
+Em novas demandas e compromissos, use **Salvar e adicionar arquivos**. Depois, **Adicionar arquivos → Enviar arquivos**. Registros existentes oferecem os anexos ao abrir seus detalhes. Coordenação e Equipe podem enviar qualquer formato, até **50 MB por arquivo e 50 anexos por registro**, incluindo os que estão na lixeira. Consulta pode visualizar e baixar. Os arquivos originais são preservados, inclusive metadados; formatos executáveis, HTML e SVG são disponibilizados somente para download, nunca incorporados à página.
+
+**Excluir** pede confirmação e retira demandas, compromissos, encaminhamentos ou anexos das listas. A Coordenação pode recuperá-los em **Privacidade e auditoria → Lixeira**. Ao excluir a demanda, seus encaminhamentos e anexos ficam ocultos até a recuperação. A recuperação de agenda verifica conflitos de horário. A exclusão não apaga definitivamente os arquivos do armazenamento.
+
+As abas **Equipe e acessos** e **Privacidade e auditoria** ficam disponíveis somente à Coordenação, inclusive ao tentar abrir o endereço direto. Os dados necessários para atribuir responsáveis continuam disponíveis nos formulários da equipe.
+
+A busca de endereço envia somente o texto digitado ao serviço Photon, com espera de 700 ms, cancelamento e cache temporário. O serviço público não oferece garantia de disponibilidade; o preenchimento manual continua funcionando. [Serviço e condições de uso](https://github.com/komoot/photon), [API](https://github.com/komoot/photon/blob/master/docs/api-v1.md), [limites de arquivos do Supabase](https://supabase.com/docs/guides/storage/uploads/file-limits).
 
 ## Segurança implementada
 
@@ -62,7 +74,7 @@ Cadastrar integrantes define permissões; a ação **Criar acessos da equipe** c
 - Autor, horário, código e versões são controlados pelo servidor. Auditoria gravada na mesma transação da mudança.
 - Dados de contato dos integrantes não são compartilhados indiscriminadamente com outros perfis.
 - Edições concorrentes são recusadas quando a versão mudou. Conflitos de horário do mesmo responsável são verificados no banco.
-- A Coordenação pode excluir somente exemplos importados e identificados, em **Privacidade e auditoria → Excluir demonstrações**. A tela confere as quantidades e exige digitar `EXCLUIR`. Novos registros, contas reais, exemplos alterados e auditoria são preservados. Não há exclusão geral de registros na interface.
+- A Coordenação pode excluir somente exemplos importados e identificados, em **Privacidade e auditoria → Excluir demonstrações**. A tela confere as quantidades e exige digitar `EXCLUIR`. Novos registros, contas reais, exemplos alterados e auditoria são preservados. Essa limpeza antiga de exemplos é definitiva e separada da lixeira dos registros operacionais.
 - Retenção, exclusão administrativa e backups precisam de política institucional própria. Administradores do banco continuam tendo poderes sobre a auditoria; ela não é um registro imutável certificado.
 
 ## Publicação

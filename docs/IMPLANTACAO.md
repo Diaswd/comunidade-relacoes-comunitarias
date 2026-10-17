@@ -76,6 +76,7 @@ Foram aprovados 34 testes locais e o build: criação e vínculo de contas, bloq
 
 Em 15/10/2026, a consulta dos acessos pendentes ficou sem resposta em uma sessão do navegador; recarregar a página recuperou a lista. A conferência agora permite cancelamento e limita toda a operação a 15 segundos, inclusive uma eventual espera pela sessão antes da requisição. O erro oferece nova tentativa, e respostas de consultas canceladas não alteram a tela reaberta. Quatro testes de sucesso, falha, prazo e cancelamento elevaram o total para 38. Isso não cancela nem repete automaticamente uma criação de contas já enviada.
 
+
 ## Importação do protótipo anterior
 
 O export completo original fica apenas no armazenamento local em `exports/d1-backup.json`, fora do Git. Preserve esse arquivo e o banco de origem até a validação da migração.
@@ -121,3 +122,20 @@ Documentação: [atualização administrativa de usuários](https://supabase.com
 6. Encerrar a entrada de dados na versão anterior e comunicar qual endereço passa a ser usado.
 
 O código inclui testes de banco e Excel para esses controles, mas eles não substituem a validação de login, hospedagem e navegação no ambiente final.
+
+
+## Atualização de arquivos, endereços e lixeira (16/10/2026)
+
+A migração `20261015132536_demand_photos_location.sql` adiciona endereço, Maps e o armazenamento legado de fotos. Já foi aplicada em 15/10. A migração `20261017023438_attachments_and_trash.sql` amplia o armazenamento para arquivos de qualquer formato em demandas e compromissos e adiciona exclusão reversível. Fotos legadas são preservadas e copiadas para o catálogo de anexos, sem mover os objetos.
+
+O bucket `rc-files` é privado, com limite de 50 MB e sem restrição de MIME. A tabela `rc_attachments` valida o vínculo único a demanda ou compromisso. Coordenação e Equipe podem enviar; Consulta pode ler. A função de registro confere autor do objeto, tamanho e existência do registro, aplica limite de 50 anexos e grava auditoria. Caminhos aleatórios não contêm nomes de pessoas. Uploads não sobrescrevem arquivos. O usuário pode repetir um envio com o mesmo caminho se a resposta ou o registro falhar.
+
+A lixeira usa `rc_private.deleted_records`. RLS, RPC de carregamento, histórico e download verificam a exclusão do registro e de seus pais. Uma versão desatualizada impede exclusão ou recuperação. Só a Coordenação recupera; a recuperação de compromissos confere conflitos. Os bytes continuam no Storage até um procedimento administrativo de retenção, ainda não implementado. Objetos enviados sem registro concluído permanecem privados; a limpeza administrativa desses objetos órfãos também depende da política de retenção.
+
+Arquivos são baixados autenticados, sem URL pública. Imagens raster, vídeos e áudios de formatos conhecidos podem ser visualizados como mídia; outros arquivos são baixados como anexos, sem execução incorporada. Os originais não são convertidos nem têm metadados removidos. O envio padrão aceita até 50 MB; em conexões lentas, tentativas podem precisar ser repetidas. Upload resumível é uma evolução futura.
+
+A busca de endereços usa o serviço público Photon/OpenStreetMap, com CORS verificado para o domínio da aplicação, espera de 700 ms, cancelamento de buscas antigas, timeout de 10 s e cache limitado a 50 consultas. A busca é limitada à região de São Leopoldo. O texto digitado sai do sistema para esse serviço; não envia descrição, nome de morador ou dados de autenticação. A tela informa a origem das sugestões e mantém preenchimento manual. O Maps usa links HTTPS e não depende de API paga.
+
+Testes locais: 47 passaram, incluindo permissões, arquivos PDF/vídeo/áudio/binários, objetos ainda não registrados, limites de tamanho, exclusão de pais e anexos, recuperação, versões e conflito de agenda. TypeScript e build passaram. Testes de banco usam PostgreSQL local em PGlite e objetos de Storage simulados; não equivalem a um upload real pelo navegador.
+
+A migração de anexos foi aplicada via conector após os testes. O arquivo foi criado com o CLI oficial e renomeado para a versão retornada pelo histórico remoto (relógio do servidor). Verificação remota confirmou bucket privado, limite de 50 MB, RLS e acesso anônimo bloqueado nas sete tabelas e novas RPCs. O Security Advisor manteve somente os dois avisos já documentados (manifesto privado e proteção contra senhas vazadas).

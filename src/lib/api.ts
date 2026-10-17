@@ -16,6 +16,10 @@ async function call<T>(name:string,args:Record<string,unknown>={},signal?:AbortS
   return data as T;
 }
 export async function loadWorkspace(){return call<State>('rc_workspace');}
+export type DeletableKind='demand'|'event'|'referral'|'attachment';
+export type TrashItem={kind:DeletableKind;id:string;version:number;title:string;actor:string;deletedAt:string};
+export async function setDeleted(kind:DeletableKind,id:string,version:number,restore=false){return call('rc_set_deleted',{p_kind:kind,p_id:id,p_version:version,p_restore:restore});}
+export async function readTrash(){return call<TrashItem[]>('rc_trash');}
 export type PendingAccount={id:string;name:string;email:string;role:string;version:number;existingAuthId:string|null};
 export async function pendingAccounts(signal?:AbortSignal){return withDeadline(s=>call<PendingAccount[]>('rc_pending_accounts',{},s),{signal,timeoutMs:15000,message:'A consulta demorou mais que o esperado. Confira sua conexão e tente novamente. Se continuar, recarregue a página.'});}
 export async function provisionAccounts(password:string,members:PendingAccount[]){

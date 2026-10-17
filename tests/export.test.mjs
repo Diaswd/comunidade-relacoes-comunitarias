@@ -24,7 +24,7 @@ const decode=s=>s.replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>
 function rows(xml){return [...xml.matchAll(/<row\b[^>]*>(.*?)<\/row>/gs)].map(r=>[...r[1].matchAll(/<c\b[^>]*>(.*?)<\/c>/gs)].map(c=>{const n=c[1].match(/<v>(.*?)<\/v>/s);return n?Number(n[1]):decode(c[1].match(/<t\b[^>]*>(.*?)<\/t>/s)?.[1]||'')}))}
 const demand=(id,extra={})=>({id,code:'RC-'+id,title:'Visita '+id,neighborhood:'Centro',description:'Descrição fictícia',priority:'Normal',ownerId:'member',due:'2026-10-13',status:'Nova',nextStep:'Agendar',createdAt:'2026-10-12T15:00:00Z',closedAt:null,...extra});
 const state={today:'2026-10-14',members:[{id:'member',name:'Pessoa de teste'}],demands:[
- demand('1',{title:'=HYPERLINK("https://example.test")',description:'Praça & <pátio>\u0000',createdAt:'2026-10-12T02:59:59Z'}),
+ demand('1',{title:'=HYPERLINK("https://example.test")',description:'Praça & <pátio>\u0000',address:'Rua de teste, 120',mapsUrl:'https://maps.app.goo.gl/Test123',createdAt:'2026-10-12T02:59:59Z'}),
  demand('2',{status:'Concluída',createdAt:'2026-10-12T03:00:00Z',closedAt:'2026-10-19T02:59:59Z'}),
  demand('3',{neighborhood:'Outro bairro'}),
  demand('4',{status:'Concluída',createdAt:'2026-10-19T03:00:00Z',closedAt:'2026-10-19T03:00:00Z'})
@@ -40,7 +40,8 @@ test('Excel respects demand filters and linked referrals, preserving text as tex
  const demands=rows(files['xl/worksheets/sheet1.xml']);
  assert.deepEqual(demands.slice(1).map(r=>r[0]),['RC-1','RC-2','RC-4']);
  assert.equal(demands[1][1],'=HYPERLINK("https://example.test")');
- assert.equal(demands[1][3],'Praça & <pátio>');
+ assert.equal(demands[1][5],'Praça & <pátio>');
+ assert.equal(demands[1][3],'Rua de teste, 120');assert.equal(demands[1][4],'https://maps.app.goo.gl/Test123');
  assert.doesNotMatch(files['xl/worksheets/sheet1.xml'],/<f[\s>]/);
  assert.deepEqual(rows(files['xl/worksheets/sheet3.xml']).slice(1).map(r=>r.slice(0,2)),[['RC-1','Área incluída']]);
 });
